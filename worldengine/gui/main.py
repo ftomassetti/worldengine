@@ -14,7 +14,7 @@ from worldengine.world import World
 import worldengine.generation
 from worldengine.generation import *
 from worldengine.common import *
-from view import *
+from worldengine.gui.view import *
 from worldengine.plates import *
 from worldengine.simulations.WatermapSimulation import *
 from worldengine.simulations.IrrigationSimulation import *

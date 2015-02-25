@@ -21,7 +21,7 @@ config = {
     'version': __version__,
     'packages': ['worldengine', 'worldengine.cli', 'worldengine.gui',
                  'worldengine.simulations', 'worldengine.gui',
-                 'worldengine.protobuf'],
+                 'worldengine.views', 'worldengine.protobuf'],
     'entry_points': {
         'console_scripts': ['worldengine=worldengine.cli.main:main',
                             'worldenginegui=worldengine.gui.main:main'],
