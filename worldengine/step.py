@@ -43,9 +43,9 @@ class Step(object):
     def plates(cls):
         if not hasattr(cls, "_plates"):
             step = Step("plates")
-            step.include_precipitations = True
-            step.include_erosion = True
-            step.include_biome = True
+            step.include_precipitations = False
+            step.include_erosion = False
+            step.include_biome = False
             cls._plates = step
         return cls._plates
 
