@@ -15,7 +15,7 @@ from worldengine.version import __version__
 
 VERSION = __version__
 
-OPERATIONS = 'world|plates|ancient_map'
+OPERATIONS = 'world|plates|ancient_map|rescale'
 SEA_COLORS = 'blue|brown'
 STEPS = 'plates|precipitations|full'
 
@@ -288,6 +288,24 @@ def main():
     # TODO: allow for RGB specification as [r g b], ie [0.5 0.5 0.5] for gray
     parser.add_option_group(g_ancient_map)
 
+    # -----------------------------------------------------
+    g_rescale = OptionGroup(parser, "Rescale Options",
+                                "These options are only useful in rescale mode")
+    g_rescale.add_option('--rw', '--original-worldfile', dest='world_file',
+                             help="FILE to be loaded", metavar="FILE")
+    g_rescale.add_option('--rg', '--rescaled-worldfile', dest='rescaled_worldfile',
+                             help="name of the FILE containing the rescaled world", metavar="FILE")
+    g_rescale.add_option('--rx', '--new-width', dest='new_width',
+                             type="int", help="new width", metavar="X")
+    g_rescale.add_option('--ry', '--new-height', dest='new_height',
+                             type="int", help="new height", metavar="Y")
+    g_rescale.add_option('--rb', '--save-protocol-buffer', dest='protobuf',
+                         action="store_true",
+                         help="Save world file using protocol buffer format. " +
+                              "Default = store using pickle format",
+                      default=False)
+    parser.add_option_group(g_rescale)
+
     (options, args) = parser.parse_args()
 
     if os.path.exists(options.output_dir):
@@ -346,6 +364,18 @@ def main():
     if options.rivers_map and not generation_operation:
         usage(error="Rivers map can be produced only during world generation")
 
+    if operation == 'rescale':
+        if not options.new_width or not options.new_height:
+            usage(error="When rescaling the new width and height must be specified")
+        if options.new_width < 8 or options.new_width > 100000:
+            usage(error="Invalid new width")
+        if options.new_height < 8 or options.new_height > 100000:
+            usage(error="Invalid new height")
+        if not options.world_file:
+            usage(error="World file to be rescaled should be specified")
+        if not os.path.exists(options.world_file):
+            usage(error="Specified world file does not exist")
+
     print('Worldengine - a world generator (v. %s)' % VERSION)
     print('-----------------------')
     print(' operation         : %s generation' % operation)
@@ -370,6 +400,12 @@ def main():
         print(' resize factor     : %i' % options.resize_factor)
         print(' world file        : %s' % options.world_file)
         print(' sea color         : %s' % options.sea_color)
+    if operation == 'rescale':
+        print(' original world file : %s' % options.world_file)
+        print(' rescaled world file : %s' % options.rescaled_worldfile)
+        print(' new width           : %i' % options.new_width)
+        print(' new height          : %i' % options.new_height)
+        print(' world format        : %s' % world_format)
 
     print('')  # empty line
     print('starting (it could take a few minutes) ...')
@@ -411,6 +447,8 @@ def main():
             options.generated_file = "ancient_map_%s.png" % world.name
         operation_ancient_map(world, options.generated_file,
                               options.resize_factor, sea_color)
+    elif operation == 'rescale':
+        pass
     else:
         raise Exception(
             'Unknown operation: valid operations are %s' % OPERATIONS)
