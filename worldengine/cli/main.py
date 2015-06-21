@@ -20,6 +20,18 @@ SEA_COLORS = 'blue|brown'
 STEPS = 'plates|precipitations|full'
 
 
+def save_world(world, filename, world_format):
+    with open(filename, "wb") as f:
+        if world_format == 'pickle':
+            pickle.dump(world, f, pickle.HIGHEST_PROTOCOL)
+        elif world_format == 'protobuf':
+            f.write(world.protobuf_serialize())
+        else:
+            print("Unknown format '%s', not saving " % world_format)
+    print("* world data saved in '%s'" % filename)
+    sys.stdout.flush()
+
+
 def generate_world(world_name, width, height, seed, num_plates, output_dir,
                    step, ocean_level, world_format='pickle', verbose=True):
     w = world_gen(world_name, width, height, seed, num_plates, ocean_level,
@@ -31,15 +43,7 @@ def generate_world(world_name, width, height, seed, num_plates, output_dir,
 
     # Save data
     filename = "%s/%s.world" % (output_dir, world_name)
-    with open(filename, "wb") as f:
-        if world_format == 'pickle':
-            pickle.dump(w, f, pickle.HIGHEST_PROTOCOL)
-        elif world_format == 'protobuf':
-            f.write(w.protobuf_serialize())
-        else:
-            print("Unknown format '%s', not saving " % world_format)
-    print("* world data saved in '%s'" % filename)
-    sys.stdout.flush()
+    save_world(w, filename, world_format)
 
     # Generate images
     filename = '%s/%s_ocean.png' % (output_dir, world_name)
@@ -375,6 +379,8 @@ def main():
             usage(error="World file to be rescaled should be specified")
         if not os.path.exists(options.world_file):
             usage(error="Specified world file does not exist")
+        if not options.rescaled_worldfile:
+            usage(error="New name of the rescaled world should be specified")
 
     print('Worldengine - a world generator (v. %s)' % VERSION)
     print('-----------------------')
@@ -448,7 +454,9 @@ def main():
         operation_ancient_map(world, options.generated_file,
                               options.resize_factor, sea_color)
     elif operation == 'rescale':
-        pass
+        world = load_world(options.world_file)
+        world.rescale(options.new_width, options.new_height)
+        save_world(world, options.rescaled_worldfile, world_format)
     else:
         raise Exception(
             'Unknown operation: valid operations are %s' % OPERATIONS)
