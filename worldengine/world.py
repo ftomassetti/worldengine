@@ -868,3 +868,44 @@ class World(object):
 
     def set_lakemap(self, lake_map):
         self.lake_map = lake_map
+
+    def __rescale_matrix__(self, matrix, new_width, new_height):
+        base_value = None
+        if type(matrix[0][0])==int:
+            base_value = 0
+        elif type(matrix[0][0])==float:
+            base_value = 0.0
+        elif type(matrix[0][0])==bool:
+            base_value = False
+        else:
+            raise Exception("Unknown matrix value %s" % type(matrix[0][0]))
+
+        rescaled_matrix = [[base_value for x in range(new_width)] for y in range(new_height)]
+        return rescaled_matrix
+
+    def rescale(self, new_width, new_height):
+        self.elevation['data'] = self.__rescale_matrix__(self.elevation['data'], new_width, new_height)
+        self.plates = self.__rescale_matrix__(self.plates, new_width, new_height)
+        self.ocean = self.__rescale_matrix__(self.ocean, new_width, new_height)
+        self.sea_depth = self.__rescale_matrix__(self.sea_depth, new_width, new_height)
+
+        if hasattr(self, 'biome'):
+            self.biome = self.__rescale_matrix__(self.biome, new_width, new_height)
+        if hasattr(self, 'humidity'):
+            self.humidity = self.__rescale_matrix__(self.humidity, new_width, new_height)
+        if hasattr(self, 'irrigation'):
+            self.irrigation = self.__rescale_matrix__(self.irrigation, new_width, new_height)
+        if hasattr(self, 'permeability'):
+            self.permeability = self.__rescale_matrix__(self.permeability, new_width, new_height)
+        if hasattr(self, 'watermap'):
+            self.watermap['data'] = self.__rescale_matrix__(self.watermap['data'], new_width, new_height)
+        if hasattr(self, 'lake_map'):
+            self.lake_map = self.__rescale_matrix__(self.lake_map, new_width, new_height)
+        if hasattr(self, 'river_map'):
+            self.river_map = self.__rescale_matrix__(self.river_map, new_width, new_height)
+        if hasattr(self, 'precipitation'):
+            self.precipitation['data'] = self.__rescale_matrix__(self.precipitation['data'], new_width, new_height)
+        if hasattr(self, 'temperature'):
+            self.temperature['data'] = self.__rescale_matrix__(self.temperature['data'], new_width, new_height)
+        self.width = new_width
+        self.height = new_height
