@@ -456,7 +456,7 @@ def main():
     elif operation == 'rescale':
         world = load_world(options.world_file)
         world.rescale(options.new_width, options.new_height)
-        #save_world(world, options.rescaled_worldfile, world_format)
+        save_world(world, options.rescaled_worldfile, world_format)
     else:
         raise Exception(
             'Unknown operation: valid operations are %s' % OPERATIONS)

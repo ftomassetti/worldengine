@@ -4,8 +4,71 @@ from worldengine.biome import *
 from worldengine.basic_map_operations import *
 import worldengine.protobuf.World_pb2 as Protobuf
 from worldengine.step import Step
+import math
 
 execfile('worldengine/version.py')
+
+
+def cubic_interpolate(p0, p1, p2, p3, t):
+    """
+    :param p0: value preceding (corresponding to t=-1)
+    :param p1: value preceding (corresponding to t=0)
+    :param p2: value following (corresponding to t=1)
+    :param p3: value following (corresponding to t=2)
+    :param t: between 0 and 1 indicates how close to p1 or p2 the value ie
+    :return:
+    """
+    return p1 + \
+        (-0.5 * p0 + 0.5 * p2) * t + \
+        (p0 - 2.5 * p1 + 2.0 * p2 - 0.5 * p3) * t * t + \
+        (-0.5 * p0 + 1.5 * p1 - 1.5 * p2 + 0.5 * p3) * t * t * t
+
+
+def bicubic_interpolate(p, tx, ty):
+    tmp0 = cubic_interpolate(p[0][0], p[0][1], p[0][2], p[0][3], ty)
+    tmp1 = cubic_interpolate(p[1][0], p[1][1], p[1][2], p[1][3], ty)
+    tmp2 = cubic_interpolate(p[2][0], p[2][1], p[2][2], p[2][3], ty)
+    tmp3 = cubic_interpolate(p[3][0], p[3][1], p[3][2], p[3][3], ty)
+    return cubic_interpolate(tmp0, tmp1, tmp2, tmp3, tx)
+
+
+def rescale_float_matrix(old_matrix, new_width, new_height):
+    old_width = len(old_matrix[0])
+    old_height = len(old_matrix)
+    rescaled_matrix = [[0.0 for x in range(new_width)] for y in range(new_height)]
+    for y in range(new_height):
+        print("rescaling %i" % y)
+        for x in range(new_width):
+            p = [[0.0 for x in range(4)] for y in range(4)]
+            old_x = float(x) * old_width / new_width
+            old_y = float(y) * old_height / new_height
+            px1 = math.floor(old_x)
+            py1 = math.floor(old_y)
+            for dy in range(-1, 3):
+                for dx in range(-1, 3):
+                    p[1 + dy][1 + dx] = old_matrix[(y+dy)%old_height][(x+dx)%old_width]
+            rescaled_matrix[y][x] = bicubic_interpolate(p, old_x - px1, old_y - py1)
+    return rescaled_matrix
+
+
+def rescale_int_matrix(old_matrix, new_width, new_height):
+    old_width = len(old_matrix[0])
+    old_height = len(old_matrix)
+    rescaled_matrix = [[0 for x in range(new_width)] for y in range(new_height)]
+    for y in range(new_height):
+        print("rescaling %i" % y)
+        for x in range(new_width):
+            p = [[0.0 for x in range(4)] for y in range(4)]
+            old_x = float(x) * old_width / new_width
+            old_y = float(y) * old_height / new_height
+            px1 = math.floor(old_x)
+            py1 = math.floor(old_y)
+            for dy in range(-1, 3):
+                for dx in range(-1, 3):
+                    p[1 + dy][1 + dx] = float(old_matrix[(y+dy)%old_height][(x+dx)%old_width])
+            rescaled_matrix[y][x] = int(bicubic_interpolate(p, old_x - px1, old_y - py1))
+    return rescaled_matrix
+
 
 class World(object):
     """A world composed by name, dimensions and all the characteristics of
@@ -872,16 +935,17 @@ class World(object):
     def __rescale_matrix__(self, matrix, new_width, new_height):
         base_value = None
         if type(matrix[0][0])==int:
-            base_value = 0
+            return rescale_int_matrix(matrix, new_width, new_height)
         elif type(matrix[0][0])==float:
-            base_value = 0.0
+            return rescale_float_matrix(matrix, new_width, new_height)
         elif type(matrix[0][0])==bool:
             base_value = False
         else:
             raise Exception("Unknown matrix value %s" % type(matrix[0][0]))
 
         rescaled_matrix = [[base_value for x in range(new_width)] for y in range(new_height)]
-        return rescaled_matrix
+        #return rescaled_matrix
+        return matrix
 
     def rescale(self, new_width, new_height):
         self.elevation['data'] = self.__rescale_matrix__(self.elevation['data'], new_width, new_height)
@@ -892,7 +956,7 @@ class World(object):
         if hasattr(self, 'biome'):
             self.biome = self.__rescale_matrix__(self.biome, new_width, new_height)
         if hasattr(self, 'humidity'):
-            self.humidity = self.__rescale_matrix__(self.humidity, new_width, new_height)
+            self.humidity['data'] = self.__rescale_matrix__(self.humidity['data'], new_width, new_height)
         if hasattr(self, 'irrigation'):
             self.irrigation = self.__rescale_matrix__(self.irrigation, new_width, new_height)
         if hasattr(self, 'permeability'):
